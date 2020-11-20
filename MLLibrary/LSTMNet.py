@@ -58,7 +58,7 @@ class LSTMNet(Net):
     def set_in(self, array: List[float]):
         if (1, self.in_dem) == numpy.shape(array):
             self.add_new_memory()
-            index_mod = self.index % self.mem_size
+            index_mod = [self.index % self.mem_size]
             self.input_state[index_mod, :] = array
         else:
             raise ValueError("Array must be (1,%d) it is %s" % (self.in_dem, str(numpy.shape(array))))
@@ -107,20 +107,21 @@ class LSTMNet(Net):
 
                 # Move old data into memory
 
-                self.forget_gate[old_mem_size, :] = forget_gate_temp
-                self.store_gate[old_mem_size, :] = store_gate_temp
-                self.output_gate[old_mem_size, :] = output_gate_temp
+                self.forget_gate[:old_mem_size, :] = forget_gate_temp
+                self.store_gate[:old_mem_size, :] = store_gate_temp
+                self.output_gate[:old_mem_size, :] = output_gate_temp
 
-                self.input_state[old_mem_size, :] = input_state_temp
-                self.joint_state[old_mem_size, :] = joint_state_temp
+                self.input_state[:old_mem_size, :] = input_state_temp
+                self.joint_state[:old_mem_size, :] = joint_state_temp
 
-                self.cell_state[old_mem_size, :] = cell_state_temp
-                self.cell_temp[old_mem_size, :] = cell_temp_temp
-                self.output_state[old_mem_size, :] = output_state_temp
+                self.cell_state[:old_mem_size, :] = cell_state_temp
+                self.cell_temp[:old_mem_size, :] = cell_temp_temp
+                self.output_state[:old_mem_size, :] = output_state_temp
 
     def get_out(self):
-        index_mod = self.index % self.mem_size
-        index_before = (self.index - 1) % self.mem_size
+        # print("Out ran")
+        index_mod = [self.index % self.mem_size]
+        index_before = [(self.index - 1) % self.mem_size]
 
         self.joint_state[index_mod, :self.in_dem] = self.input_state[index_mod, :]
         self.joint_state[index_mod, self.in_dem:] = self.output_state[index_before, :]
@@ -160,13 +161,14 @@ class LSTMNet(Net):
         d_weights_cell      = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
         d_output_state[learning_distance] = derivative
         for index in range(1, learning_distance):
-            d_index = learning_distance - index
-            s_index = (self.index - 1 - index) % self.mem_size
-            s_index_less = (self.index - 2 - index) % self.mem_size
+            d_index = [learning_distance - index]
+            d_index_next = [learning_distance - index]
+            s_index = [(self.index - 1 - index) % self.mem_size]
+            s_index_less = [(self.index - 2 - index) % self.mem_size]
 
-            d_temp = self.output_gate[s_index] * d_output_state[d_index + 1] + d_cell_state[d_index + 1]
+            d_temp = self.output_gate[s_index] * d_output_state[d_index_next] + d_cell_state[d_index_next]
             d_joint_o = numpy.dot(
-                d_output_state[d_index + 1] * self.output_gate[s_index] * (1.0 - self.output_gate[s_index]) * self.cell_state[s_index],
+                d_output_state[d_index_next] * self.output_gate[s_index] * (1.0 - self.output_gate[s_index]) * self.cell_state[s_index],
                 numpy.transpose(self.weights_output)
             )
             d_joint_s = numpy.dot(
@@ -188,25 +190,26 @@ class LSTMNet(Net):
             d_cell_state[d_index]     = self.forget_gate[s_index] * d_temp
 
             d_weights_output[d_index] = numpy.dot(
-                numpy.transpose(self.joint_state),
-                d_output_state[d_index + 1] * self.cell_state[s_index] * self.output_gate[s_index] * (1.0 - self.output_gate[s_index]))
+                numpy.transpose(self.joint_state[s_index]),
+                d_output_state[d_index_next] * self.cell_state[s_index] * self.output_gate[s_index] * (1.0 - self.output_gate[s_index]))
             d_weights_forget[d_index] = numpy.dot(
-                numpy.transpose(self.joint_state),
+                numpy.transpose(self.joint_state[s_index]),
                 d_temp * self.cell_state[s_index_less] * self.forget_gate[s_index] * (1.0 - self.forget_gate[s_index]))
             d_weights_store[d_index]  = numpy.dot(
-                numpy.transpose(self.joint_state),
+                numpy.transpose(self.joint_state[s_index]),
                 d_temp * self.cell_temp[s_index] * self.store_gate[s_index] * (1.0 - self.store_gate[s_index]))
             d_weights_cell[d_index]   = numpy.dot(
-                numpy.transpose(self.joint_state),
+                numpy.transpose(self.joint_state[s_index]),
                 d_temp * self.store_gate[s_index] * (1.0 - (self.cell_temp[s_index] * self.cell_temp[s_index])))
 
         # Last Row needs zeros
-        d_index = 0
-        s_index = (self.index - 1 - learning_distance) % self.mem_size
+        d_index = [0]
+        d_index_next = [1]
+        s_index = [(self.index - 1 - learning_distance) % self.mem_size]
 
-        d_temp = self.output_gate[s_index] * d_output_state[d_index + 1] + d_cell_state[d_index + 1]
+        d_temp = self.output_gate[s_index] * d_output_state[d_index_next] + d_cell_state[d_index_next]
         d_joint_o = numpy.dot(
-            d_output_state[d_index + 1] * self.output_gate[s_index] * (1.0 - self.output_gate[s_index]) *
+            d_output_state[d_index_next] * self.output_gate[s_index] * (1.0 - self.output_gate[s_index]) *
             self.cell_state[s_index],
             numpy.transpose(self.weights_output)
         )
@@ -225,21 +228,41 @@ class LSTMNet(Net):
         d_cell_state[d_index] = self.forget_gate[s_index] * d_temp
 
         d_weights_output[d_index] = numpy.dot(
-            numpy.transpose(self.joint_state),
-            d_output_state[d_index + 1] * self.cell_state[s_index] * self.output_gate[s_index] * (
+            numpy.transpose(self.joint_state[s_index]),
+            d_output_state[d_index_next] * self.cell_state[s_index] * self.output_gate[s_index] * (
                         1.0 - self.output_gate[s_index]))
         d_weights_forget[d_index] = numpy.zeros((self.joint_dem, self.out_dem))
         d_weights_store[d_index] = numpy.dot(
-            numpy.transpose(self.joint_state),
+            numpy.transpose(self.joint_state[s_index]),
             d_temp * self.cell_temp[s_index] * self.store_gate[s_index] * (1.0 - self.store_gate[s_index]))
         d_weights_cell[d_index] = numpy.dot(
-            numpy.transpose(self.joint_state),
+            numpy.transpose(self.joint_state[s_index]),
             d_temp * self.store_gate[s_index] * (1.0 - (self.cell_temp[s_index] * self.cell_temp[s_index])))
+
+
+
+        # print("Status")
+        # print(self.weights_cell)
+        # print(self.weights_forget)
+        # print(self.weights_store)
+        # print(self.weights_output)
+        #
+        # print("Update")
+        # print(ratio * numpy.sum(d_weights_cell, 0) / learning_distance)
+        # print(ratio * numpy.sum(d_weights_forget, 0) / learning_distance)
+        # print(ratio * numpy.sum(d_weights_store, 0) / learning_distance)
+        # print(ratio * numpy.sum(d_weights_output, 0) / learning_distance)
+
 
         self.weights_cell += ratio * numpy.sum(d_weights_cell, 0) / learning_distance
         self.weights_forget += ratio * numpy.sum(d_weights_forget, 0) / learning_distance
         self.weights_store += ratio * numpy.sum(d_weights_store, 0) / learning_distance
         self.weights_output += ratio * numpy.sum(d_weights_output, 0) / learning_distance
+        # print("Final")
+        # print(self.weights_cell)
+        # print(self.weights_forget)
+        # print(self.weights_store)
+        # print(self.weights_output)
 
         return d_input_state
 
