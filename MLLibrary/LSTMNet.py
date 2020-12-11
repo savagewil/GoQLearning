@@ -204,8 +204,8 @@ class LSTMNet(Net):
                                                    d_cell @ numpy.transpose(self.weights_cell) +
                                                    d_output @ numpy.transpose(self.weights_output))
 
-            d_output_state[mem_index_before, :] = d_joint_state[mem_index_mod, :self.in_dem]
-            d_input_state[mem_index_mod, :]     = d_joint_state[mem_index_mod, self.in_dem:self.in_dem + self.out_dem]
+            d_input_state[mem_index_before, :] = d_joint_state[mem_index_mod, :self.in_dem]
+            d_output_state[mem_index_mod, :]     = d_joint_state[mem_index_mod, self.in_dem:self.in_dem + self.out_dem]
 
         self.weights_cell   += ratio * numpy.sum(d_weights_cell, 0) / learning_distance
         self.weights_forget += ratio * numpy.sum(d_weights_forget, 0) / learning_distance
