@@ -4,11 +4,10 @@ import numpy
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-
-Iterations = 100000000
 S = 1
-learning_rate = 0.00005
 LSTM = LSTMNet(S, S, S + 1)
+Iterations = 100000000
+learning_rate = 0.00005
 start_time = datetime.now()
 
 inputs = []
@@ -19,7 +18,7 @@ label = []
 
 input = [[]]
 for j in range(S):
-    input[0].append(choice([0.0, 1.0]))  # -1.0,
+    input[0].append(choice([0.0, 1.0])) #-1.0,
 inputs.append(input)
 
 for i in range(Iterations):
@@ -30,8 +29,8 @@ for i in range(Iterations):
 
     if len(inputs) > 2:
         inputs = inputs[-2:]
-    X = numpy.array(input)
-    Y = numpy.array(1.0 if (inputs[-1][0][0] == 1.0 and inputs[-2][0][0] == 1.0) else 0.0) #inputs[0]
+    X = numpy.array(inputs[-1])
+    Y = numpy.array(inputs[-2]) #inputs[0]
     LSTM.set_in(X)
     P = LSTM.get_out()
     d = numpy.zeros((1, 3))
@@ -41,11 +40,11 @@ for i in range(Iterations):
     in_.append(input[0][0])
     label.append("One" if (input[0][0]==1.0) else "Zero" )
     LSTM.learn(learning_rate, d)
-    if (i % (Iterations//100) == 0):
+    if (i % (Iterations // 100) == 0):
         elapsed_time = datetime.now()
         diff_time = elapsed_time - start_time
-        sample_error = error[-(Iterations//100):]
-        sample_accuracy = accuracy[-(Iterations//100):]
+        sample_error = error[-(Iterations // 100):]
+        sample_accuracy = accuracy[-(Iterations // 100):]
         print("Iteration %s\n"
               "Elapsed Time:    %s\n"
               "Input:           %s\n"
@@ -67,8 +66,7 @@ for i in range(Iterations):
                numpy.average(sample_accuracy)
 
                ))
-
-    pass
+        pass
 iteration = numpy.arange(len(error))
 in_= numpy.array(in_)
 error = numpy.array(error)

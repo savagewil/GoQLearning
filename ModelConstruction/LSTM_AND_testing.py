@@ -3,8 +3,10 @@ from random import choice
 import numpy
 import matplotlib.pyplot as plt
 
-S = 1
-LSTM = LSTMNet(S, S, S + 1)
+I = 2
+O = 1
+D = 2
+LSTM = LSTMNet(I, O, D)
 
 inputs = []
 error = []
@@ -13,7 +15,7 @@ in_ = []
 label = []
 for i in range(10000):
     input = [[]]
-    for j in range(S):
+    for j in range(I):
         input[0].append(choice([0.0, 1.0])) #-1.0,
     inputs.append(input)
 
