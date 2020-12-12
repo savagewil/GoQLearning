@@ -16,7 +16,7 @@ label = []
 for i in range(10000):
     input = [[]]
     for j in range(I):
-        input[0].append(choice([0.0, 1.0])) #-1.0,
+        input[0].append(choice([1.0])) #-1.0,
     inputs.append(input)
 
     if len(inputs) > 2:

@@ -5,13 +5,15 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-Iterations = 100000000
+Iterations = 10000
 S = 1
-learning_rate = 0.00005
+learning_rate = 1.0
 LSTM = LSTMNet(S, S, S + 1)
 start_time = datetime.now()
 
 inputs = []
+prediction = []
+expected = []
 error = []
 accuracy = []
 in_ = []
@@ -38,6 +40,8 @@ for i in range(Iterations):
     d = (Y - P)/2.0
     error.append(numpy.sum((Y - P)**2.0))
     accuracy.append(numpy.sum((Y - numpy.round(P))**2.0))
+    prediction.append(P)
+    expected.append(Y)
     in_.append(input[0][0])
     label.append("One" if (input[0][0]==1.0) else "Zero" )
     LSTM.learn(learning_rate, d)
@@ -72,7 +76,7 @@ for i in range(Iterations):
 iteration = numpy.arange(len(error))
 in_= numpy.array(in_)
 error = numpy.array(error)
-window = 50
+window = 100
 accuracy = numpy.convolve(numpy.array(accuracy), numpy.ones(window), "same") / window
 
 ones_error = error[in_ == 1.0]
@@ -102,3 +106,8 @@ plt.ylabel('Rolling Error')
 ax.legend()
 
 plt.show()
+
+prediction = numpy.reshape(numpy.array(prediction[-window:]), window)
+expected = numpy.array(expected[-window:])
+accuracy = 100 * (numpy.sum(expected == numpy.round(prediction)) / window)
+print(accuracy)

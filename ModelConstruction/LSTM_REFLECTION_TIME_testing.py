@@ -6,8 +6,8 @@ from datetime import datetime
 
 S = 1
 LSTM = LSTMNet(S, S, S + 1)
-Iterations = 100000000
-learning_rate = 0.00005
+Iterations = 20000
+learning_rate = 0.0001
 start_time = datetime.now()
 
 inputs = []
@@ -15,6 +15,8 @@ error = []
 accuracy = []
 in_ = []
 label = []
+prediction = []
+expected = []
 
 input = [[]]
 for j in range(S):
@@ -37,6 +39,8 @@ for i in range(Iterations):
     d = (Y - P)/2.0
     error.append(numpy.sum((Y - P)**2.0))
     accuracy.append(numpy.sum((Y - numpy.round(P))**2.0))
+    prediction.append(P)
+    expected.append(Y)
     in_.append(input[0][0])
     label.append("One" if (input[0][0]==1.0) else "Zero" )
     LSTM.learn(learning_rate, d)
@@ -100,3 +104,8 @@ plt.ylabel('Rolling Error')
 ax.legend()
 
 plt.show()
+
+prediction = numpy.reshape(numpy.array(prediction[-window:]), window)
+expected = numpy.reshape(numpy.array(expected[-window:]), window)
+accuracy = 100 * (numpy.sum(expected == numpy.round(prediction)) / window)
+print(accuracy)
