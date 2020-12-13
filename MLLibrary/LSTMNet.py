@@ -232,9 +232,9 @@ class LSTMNet(Net):
         return d_input_state
 
     def fit(self, X, Y, ratio=0.1, batch=1, max_iterations=0, target_accuracy=1.0, err_der=(lambda Y, P: (Y - P)/2.0)):
-        accuracy = 0.0
+        accuracy = numpy.zeros(self.out_dem)
         iteration = 0
-        while (iteration < max_iterations or max_iterations <= 0) and accuracy < target_accuracy:
+        while (iteration < max_iterations or max_iterations <= 0) and any(accuracy < target_accuracy):
             if isinstance(X, types.GeneratorType):
                 x_data = [next(X) for _ in range(batch)]
             else:
@@ -255,11 +255,14 @@ class LSTMNet(Net):
             for index in range(batch):
                 self.set_in(x_data[index])
                 prediction = self.get_out()
-                p_accuracy += numpy.abs(numpy.reshape(y_data[index], self.out_dem) -
+                y_data_temp = numpy.reshape(y_data[index], self.out_dem)
+                keep = y_data_temp != None
+                y_data_temp[y_data_temp == None] = 0
+                p_accuracy += keep * numpy.abs(y_data_temp -
                                       numpy.reshape(prediction, self.out_dem))
-                accuracy += numpy.abs(numpy.reshape(y_data[index], self.out_dem) -
+                accuracy += keep * numpy.abs(y_data_temp -
                                       numpy.round(numpy.reshape(prediction, self.out_dem)))
-                gradient = err_der(y_data[index],prediction)
+                gradient = keep * err_der(y_data_temp,prediction)
 
                 (d_input_state_temp,
                  d_weights_cell_temp,
@@ -281,7 +284,7 @@ class LSTMNet(Net):
 
             accuracy = (1.0 - accuracy / (batch * self.out_dem))
             p_accuracy = (1.0 - p_accuracy / (batch * self.out_dem))
-            print("Accuracy: %f\tPredicted Accuracy: %f"%(accuracy,p_accuracy))
+            print("Accuracy: %s\tPredicted Accuracy: %s"%(str(accuracy),str(p_accuracy)))
 
             iteration += 1
 

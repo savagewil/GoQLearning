@@ -6,15 +6,15 @@ import numpy
 import matplotlib.pyplot as plt
 
 I = 1
-O = 1
-D = 2
+O = 4
+D = 4
 LSTM = LSTMNet(I, O, D)
 MAX_ITER = 1000
-BATCH = 100
-LEARNING_RATIO = 10.0
+BATCH = 1000
+LEARNING_RATIO = 3.0
 
 def get_X():
-    index = 0
+    index = 1
     while True:
         index += 1
         numpy.random.seed(index)
@@ -22,14 +22,14 @@ def get_X():
 
 
 def get_Y():
-    index = 0
+    index = 1
     while True:
-        numpy.random.seed(index)
+        numpy.random.seed(index-1)
         b1 = numpy.random.choice([0.0, 1.0])
         index += 1
         numpy.random.seed(index)
         b2 = numpy.random.choice([0.0, 1.0])
-        yield [[b1 == 1.0 and b2 == 1.0]]
+        yield [[(b1 == 1.0 and b2 == 1.0), None, None, None]]
 
 
 X = get_X()
