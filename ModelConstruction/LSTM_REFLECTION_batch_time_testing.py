@@ -5,29 +5,25 @@ from random import choice
 import numpy
 import matplotlib.pyplot as plt
 
-I = 2
+I = 1
 O = 1
 D = 2
 LSTM = LSTMNet(I, O, D)
 MAX_ITER = 1000
 BATCH = 100
-LEARNING_RATIO = 0.1
+LEARNING_RATIO = 0.01
 
 def get_X():
+    index = 0
     while True:
-        for b1 in [0.0, 1.0]:
-            for b2 in [0.0, 1.0]:
-                yield [[b1, b2]]
-
-def get_Y():
-    while True:
-        for b1 in [False, True]:
-            for b2 in [False, True]:
-                yield 1.0 if (b1 and b2) else 0.0
+        index += 1
+        numpy.random.seed(index)
+        yield [[numpy.random.choice([0.0, 1.0])]]
 
 
 X = get_X()
-Y = get_Y()
+Y = get_X()
+next(X)
 
 LSTM.fit(X, Y, ratio=LEARNING_RATIO, batch=BATCH, max_iterations=MAX_ITER)
 

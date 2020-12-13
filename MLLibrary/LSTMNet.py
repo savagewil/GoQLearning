@@ -231,7 +231,7 @@ class LSTMNet(Net):
 
         return d_input_state
 
-    def fit(self, ratio, X, Y, batch=1, max_iterations=0, target_accuracy=1.0, err_der=(lambda Y, P: (Y - P)/2.0)):
+    def fit(self, X, Y, ratio=0.1, batch=1, max_iterations=0, target_accuracy=1.0, err_der=(lambda Y, P: (Y - P)/2.0)):
         accuracy = 0.0
         iteration = 0
         while (iteration < max_iterations or max_iterations <= 0) and accuracy < target_accuracy:
@@ -250,12 +250,15 @@ class LSTMNet(Net):
             d_weights_output    = numpy.zeros((self.joint_dem, self.out_dem))
             d_weights_store     = numpy.zeros((self.joint_dem, self.out_dem))
             d_weights_cell      = numpy.zeros((self.joint_dem, self.out_dem))
-            accuracy = 0
+            accuracy    = 0
+            p_accuracy  = 0
             for index in range(batch):
                 self.set_in(x_data[index])
                 prediction = self.get_out()
-                accuracy += numpy.abs(numpy.reshape(y_data[index], self.out_dem) -
+                p_accuracy += numpy.abs(numpy.reshape(y_data[index], self.out_dem) -
                                       numpy.reshape(prediction, self.out_dem))
+                accuracy += numpy.abs(numpy.reshape(y_data[index], self.out_dem) -
+                                      numpy.round(numpy.reshape(prediction, self.out_dem)))
                 gradient = err_der(y_data[index],prediction)
 
                 (d_input_state_temp,
@@ -271,13 +274,14 @@ class LSTMNet(Net):
                 d_weights_store     += d_weights_store_temp
                 d_weights_cell      += d_weights_cell_temp
 
-            self.weights_cell += ratio * d_weights_cell
-            self.weights_forget += ratio * d_weights_forget
-            self.weights_store += ratio * d_weights_store
-            self.weights_output += ratio * d_weights_output
+            self.weights_cell += ratio * d_weights_cell / batch
+            self.weights_forget += ratio * d_weights_forget / batch
+            self.weights_store += ratio * d_weights_store / batch
+            self.weights_output += ratio * d_weights_output / batch
 
             accuracy = (1.0 - accuracy / (batch * self.out_dem))
-            print("Accuracy: %f", accuracy)
+            p_accuracy = (1.0 - p_accuracy / (batch * self.out_dem))
+            print("Accuracy: %f\tPredicted Accuracy: %f"%(accuracy,p_accuracy))
 
             iteration += 1
 
