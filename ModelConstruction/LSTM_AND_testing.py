@@ -16,7 +16,7 @@ label = []
 for i in range(10000):
     input = [[]]
     for j in range(I):
-        input[0].append(choice([1.0])) #-1.0,
+        input[0].append(choice([0.0, 1.0])) #-1.0,
     inputs.append(input)
 
     if len(inputs) > 2:
@@ -31,7 +31,7 @@ for i in range(10000):
     accuracy.append(numpy.sum((Y - numpy.round(P))**2.0))
     in_.append(input[0][0])
     label.append("One" if (input[0][0]==1.0) else "Zero" )
-    LSTM.learn(0.01, d)
+    LSTM.learn(1.0, d)
     print("Iteration %s \t%s \t%s \t%s \t%s \t%f"%(str(i), str(input), str(Y), str(P), str(d), float(error[-1])))
     pass
 iteration = numpy.arange(len(error))

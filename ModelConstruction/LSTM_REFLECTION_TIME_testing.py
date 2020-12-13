@@ -7,7 +7,7 @@ from datetime import datetime
 S = 1
 LSTM = LSTMNet(S, S, S + 1)
 Iterations = 20000
-learning_rate = 0.0001
+learning_rate = 0.5
 start_time = datetime.now()
 
 inputs = []

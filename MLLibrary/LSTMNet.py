@@ -1,3 +1,4 @@
+import types
 from abc import abstractmethod
 from typing import Tuple, List, Callable, Type
 
@@ -155,7 +156,7 @@ class LSTMNet(Net):
 
         return self.output_state[index_mod, :]
 
-    def learn(self, ratio: float, derivative: List[int]):
+    def get_gradients(self, derivative: List[float]):
         learning_distance = self.learning_distance
         if learning_distance <= 0:
             learning_distance = self.index
@@ -207,12 +208,78 @@ class LSTMNet(Net):
             d_input_state[mem_index_before, :] = d_joint_state[mem_index_mod, :self.in_dem]
             d_output_state[mem_index_mod, :]     = d_joint_state[mem_index_mod, self.in_dem:self.in_dem + self.out_dem]
 
-        self.weights_cell   += ratio * numpy.sum(d_weights_cell, 0) / learning_distance
-        self.weights_forget += ratio * numpy.sum(d_weights_forget, 0) / learning_distance
-        self.weights_store  += ratio * numpy.sum(d_weights_store, 0) / learning_distance
-        self.weights_output += ratio * numpy.sum(d_weights_output, 0) / learning_distance
+        learning_distance = 1.0
 
-        return numpy.sum(d_input_state, 0) / learning_distance
+        return (numpy.sum(d_input_state, 0) / learning_distance,
+                numpy.sum(d_weights_cell, 0) / learning_distance,
+                numpy.sum(d_weights_forget, 0) / learning_distance,
+                numpy.sum(d_weights_store, 0) / learning_distance,
+                numpy.sum(d_weights_output, 0) / learning_distance)
+
+    def learn(self, ratio: float, derivative: List[float]):
+        (d_input_state,
+         d_weights_cell,
+         d_weights_forget,
+         d_weights_store,
+         d_weights_output
+         ) = self.get_gradients(derivative)
+
+        self.weights_cell   += ratio * d_weights_cell
+        self.weights_forget += ratio * d_weights_forget
+        self.weights_store  += ratio * d_weights_store
+        self.weights_output += ratio * d_weights_output
+
+        return d_input_state
+
+    def fit(self, ratio, X, Y, batch=1, max_iterations=0, target_accuracy=1.0, err_der=(lambda Y, P: (Y - P)/2.0)):
+        accuracy = 0.0
+        iteration = 0
+        while (iteration < max_iterations or max_iterations <= 0) and accuracy < target_accuracy:
+            if isinstance(X, types.GeneratorType):
+                x_data = [next(X) for _ in range(batch)]
+            else:
+                x_data = X[iteration * batch:(iteration + 1) * batch]
+
+            if isinstance(Y, types.GeneratorType):
+                y_data = [next(Y) for _ in range(batch)]
+            else:
+                y_data = Y[iteration * batch:(iteration + 1) * batch]
+
+            d_input_state       = numpy.zeros((self.in_dem))
+            d_weights_forget    = numpy.zeros((self.joint_dem, self.out_dem))
+            d_weights_output    = numpy.zeros((self.joint_dem, self.out_dem))
+            d_weights_store     = numpy.zeros((self.joint_dem, self.out_dem))
+            d_weights_cell      = numpy.zeros((self.joint_dem, self.out_dem))
+            accuracy = 0
+            for index in range(batch):
+                self.set_in(x_data[index])
+                prediction = self.get_out()
+                accuracy += numpy.abs(numpy.reshape(y_data[index], self.out_dem) -
+                                      numpy.reshape(prediction, self.out_dem))
+                gradient = err_der(y_data[index],prediction)
+
+                (d_input_state_temp,
+                 d_weights_cell_temp,
+                 d_weights_forget_temp,
+                 d_weights_store_temp,
+                 d_weights_output_temp
+                 ) = self.get_gradients(gradient)
+
+                d_input_state       += d_input_state_temp
+                d_weights_forget    += d_weights_forget_temp
+                d_weights_output    += d_weights_output_temp
+                d_weights_store     += d_weights_store_temp
+                d_weights_cell      += d_weights_cell_temp
+
+            self.weights_cell += ratio * d_weights_cell
+            self.weights_forget += ratio * d_weights_forget
+            self.weights_store += ratio * d_weights_store
+            self.weights_output += ratio * d_weights_output
+
+            accuracy = (1.0 - accuracy / (batch * self.out_dem))
+            print("Accuracy: %f", accuracy)
+
+            iteration += 1
 
     @abstractmethod
     def save(self) -> str:
