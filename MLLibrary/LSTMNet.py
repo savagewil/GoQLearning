@@ -3,17 +3,18 @@ from abc import abstractmethod
 from typing import Tuple, List, Callable, Type
 
 import numpy, random, math, pygame
-from MLLibrary.Net import Net
+
+from MLLibrary.Layer import Layer
 from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative, sigmoid_der, color_formula
 
 
-class LSTMNet(Net):
+class LSTMNet(Layer):
     def __init__(self, in_dem: int,
                  out_dem: int,
                  learning_distance: int = 0,
                  color_formula_param: Callable = color_formula,
                  table_block: int = 20):
-        super().__init__(in_dem, out_dem, tanh, tanh_derivative, color_formula_param)
+        # super().__init__(in_dem, out_dem, tanh, tanh_derivative, color_formula_param)
         self.in_dem: int        = in_dem
         self.out_dem: int       = out_dem
         self.joint_dem: int     = self.in_dem + self.out_dem + 1
@@ -22,6 +23,11 @@ class LSTMNet(Net):
         self.weights_store      = numpy.random.random((self.joint_dem, self.out_dem)) * 2.0 - 1.0
         self.weights_cell       = numpy.random.random((self.joint_dem, self.out_dem)) * 2.0 - 1.0
         self.weights_output     = numpy.random.random((self.joint_dem, self.out_dem)) * 2.0 - 1.0
+
+        self.gradient_weights_forget    = numpy.zeros((self.joint_dem, self.out_dem))
+        self.gradient_weights_store     = numpy.zeros((self.joint_dem, self.out_dem))
+        self.gradient_weights_cell      = numpy.zeros((self.joint_dem, self.out_dem))
+        self.gradient_weights_output    = numpy.zeros((self.joint_dem, self.out_dem))
 
         self.learning_distance  = learning_distance
         self.table_block        = table_block
@@ -59,12 +65,51 @@ class LSTMNet(Net):
 
         self.color_formula: Callable = color_formula_param
 
+
+    def propagate_forward(self, X):
+        self.set_in(X)
+        return self.get_out()
+
+    def predict(self, X, **keyword_arguments):
+        return self.propagate_forward(X)
+
+
+    def propagate_backward(self, gradient_Y):
+
+        (g_input_state,
+         g_weights_cell,
+         g_weights_forget,
+         g_weights_store,
+         g_weights_output
+         ) = self.get_gradients(gradient_Y)
+
+        self.gradient_weights_cell   += g_weights_cell
+        self.gradient_weights_forget += g_weights_forget
+        self.gradient_weights_store  += g_weights_store
+        self.gradient_weights_output += g_weights_output
+
+        return g_input_state
+
+    def update_weights(self, learning_rate):
+        self.weights_cell   += self.gradient_weights_cell
+        self.weights_forget += self.gradient_weights_forget
+        self.weights_store  += self.gradient_weights_store
+        self.weights_output += self.gradient_weights_output
+
+        self.gradient_weights_forget[:, :]    = 0
+        self.gradient_weights_store[:, :]     = 0
+        self.gradient_weights_cell[:, :]      = 0
+        self.gradient_weights_output[:, :]    = 0
+
     def set_in(self, array: List[float]):
         if (1, self.in_dem) == numpy.shape(array):
             self.add_new_memory()
             index_mod = [self.index % self.mem_size]
+            index_before = [(self.index - 1) % self.mem_size]
             self.input_state[index_mod, :] = array
-            self_input_state = self.input_state
+            self.joint_state[index_mod, :self.in_dem] = self.input_state[index_mod, :]
+            self.joint_state[index_mod, self.in_dem:self.in_dem+self.out_dem] = self.output_state[index_before, :]
+
             # print(self_input_state)
         else:
             raise ValueError("Array must be (1,%d) it is %s" % (self.in_dem, str(numpy.shape(array))))
@@ -133,9 +178,6 @@ class LSTMNet(Net):
         index_mod = [self.index % self.mem_size]
         index_before = [(self.index - 1) % self.mem_size]
 
-        self.joint_state[index_mod, :self.in_dem] = self.input_state[index_mod, :]
-        self.joint_state[index_mod, self.in_dem:self.in_dem+self.out_dem] = self.output_state[index_before, :]
-
         self.forget_gate[index_mod, :]  = sigmoid(numpy.dot(self.joint_state[index_mod, :],
                                                             self.weights_forget))
         self.store_gate[index_mod, :]   = sigmoid(numpy.dot(self.joint_state[index_mod, :],
@@ -166,70 +208,61 @@ class LSTMNet(Net):
         mem_index_mod       = [self.index % self.mem_size]
         mem_index_before    = [(self.index - 1) % self.mem_size]
 
-        d_output_state      = numpy.zeros((learning_distance + 1, self.out_dem))
-        d_input_state       = numpy.zeros((learning_distance + 1, self.in_dem))
-        d_joint_state       = numpy.zeros((learning_distance + 1, self.joint_dem))
-        d_cell_state        = numpy.zeros((learning_distance + 1, self.out_dem))
+        g_output_state      = numpy.zeros((learning_distance + 1, self.out_dem))
+        g_input_state       = numpy.zeros((learning_distance + 1, self.in_dem))
+        g_joint_state       = numpy.zeros((learning_distance + 1, self.joint_dem))
+        g_cell_state        = numpy.zeros((learning_distance + 1, self.out_dem))
 
-        d_weights_forget    = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
-        d_weights_output    = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
-        d_weights_store     = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
-        d_weights_cell      = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
+        g_weights_forget    = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
+        g_weights_output    = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
+        g_weights_store     = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
+        g_weights_cell      = numpy.zeros((learning_distance + 1, self.joint_dem, self.out_dem))
 
-        d_output_state[mem_index_mod] = derivative
+        g_output_state[mem_index_mod] = derivative
 
-        self_joint_state = self.joint_state
-        # print(self_joint_state)
-        self_input_state = self.input_state
-        # print(self_input_state)
+        # self_joint_state = self.joint_state
+        # # print(self_joint_state)
+        # self_input_state = self.input_state
+        # # print(self_input_state)
         for index in range(0, learning_distance):
             mem_index_mod       = [(self.index - index) % self.mem_size]
             mem_index_before    = [(self.index - 1 - index) % self.mem_size]
 
-            d_temp = (d_output_state[mem_index_mod, :] * self.output_gate[mem_index_mod, :] * tanh_derivative(self.output_tanh[mem_index_mod, :])
-                      + d_cell_state[mem_index_mod, :])
+            g_temp = (g_output_state[mem_index_mod, :] * self.output_gate[mem_index_mod, :] * tanh_derivative(self.output_tanh[mem_index_mod, :])
+                      + g_cell_state[mem_index_mod, :])
 
-            d_forget    = (d_temp * self.cell_state[mem_index_before, :] * sigmoid_der(self.forget_gate[mem_index_mod, :]))
-            d_store     = (d_temp * self.input_tanh[mem_index_before, :] * sigmoid_der(self.store_gate[mem_index_mod, :]))
-            d_cell      = (d_temp * self.store_gate[mem_index_mod, :] * tanh_derivative(self.input_tanh[mem_index_before, :]))
-            d_output    = (d_output_state[mem_index_mod, :] * self.input_tanh[mem_index_mod, :] * sigmoid_der(self.output_gate[mem_index_mod, :]))
+            g_forget    = (g_temp * self.cell_state[mem_index_before, :] * sigmoid_der(self.forget_gate[mem_index_mod, :]))
+            g_store     = (g_temp * self.input_tanh[mem_index_before, :] * sigmoid_der(self.store_gate[mem_index_mod, :]))
+            g_cell      = (g_temp * self.store_gate[mem_index_mod, :] * tanh_derivative(self.input_tanh[mem_index_before, :]))
+            g_output    = (g_output_state[mem_index_mod, :] * self.input_tanh[mem_index_mod, :] * sigmoid_der(self.output_gate[mem_index_mod, :]))
 
-            d_weights_forget[mem_index_mod, :]    = numpy.transpose(self.joint_state[mem_index_mod, :]) @ d_forget
-            d_weights_output[mem_index_mod, :]    = numpy.transpose(self.joint_state[mem_index_mod, :]) @ d_output
-            d_weights_store[mem_index_mod, :]     = numpy.transpose(self.joint_state[mem_index_mod, :]) @ d_store
-            d_weights_cell[mem_index_mod, :]      = numpy.transpose(self.joint_state[mem_index_mod, :]) @ d_cell
+            g_weights_forget[mem_index_mod, :]    = numpy.transpose(self.joint_state[mem_index_mod, :]) @ g_forget
+            g_weights_output[mem_index_mod, :]    = numpy.transpose(self.joint_state[mem_index_mod, :]) @ g_output
+            g_weights_store[mem_index_mod, :]     = numpy.transpose(self.joint_state[mem_index_mod, :]) @ g_store
+            g_weights_cell[mem_index_mod, :]      = numpy.transpose(self.joint_state[mem_index_mod, :]) @ g_cell
 
-            d_cell_state[mem_index_before, :]   = (d_temp * self.forget_gate[mem_index_mod, :])
-            d_joint_state[mem_index_mod, :]     = (d_forget @ numpy.transpose(self.weights_forget) +
-                                                   d_store @ numpy.transpose(self.weights_store) +
-                                                   d_cell @ numpy.transpose(self.weights_cell) +
-                                                   d_output @ numpy.transpose(self.weights_output))
+            g_cell_state[mem_index_before, :]   = (g_temp * self.forget_gate[mem_index_mod, :])
+            g_joint_state[mem_index_mod, :]     = (g_forget @ numpy.transpose(self.weights_forget) +
+                                                   g_store @ numpy.transpose(self.weights_store) +
+                                                   g_cell @ numpy.transpose(self.weights_cell) +
+                                                   g_output @ numpy.transpose(self.weights_output))
 
-            d_input_state[mem_index_before, :] = d_joint_state[mem_index_mod, :self.in_dem]
-            d_output_state[mem_index_mod, :]     = d_joint_state[mem_index_mod, self.in_dem:self.in_dem + self.out_dem]
+            g_input_state[mem_index_before, :] = g_joint_state[mem_index_mod, :self.in_dem]
+            g_output_state[mem_index_mod, :]     = g_joint_state[mem_index_mod, self.in_dem:self.in_dem + self.out_dem]
 
         learning_distance = 1.0
 
-        return (numpy.sum(d_input_state, 0) / learning_distance,
-                numpy.sum(d_weights_cell, 0) / learning_distance,
-                numpy.sum(d_weights_forget, 0) / learning_distance,
-                numpy.sum(d_weights_store, 0) / learning_distance,
-                numpy.sum(d_weights_output, 0) / learning_distance)
+        return (numpy.sum(g_input_state, 0) / learning_distance,
+                numpy.sum(g_weights_cell, 0) / learning_distance,
+                numpy.sum(g_weights_forget, 0) / learning_distance,
+                numpy.sum(g_weights_store, 0) / learning_distance,
+                numpy.sum(g_weights_output, 0) / learning_distance)
 
-    def learn(self, ratio: float, derivative: List[float]):
-        (d_input_state,
-         d_weights_cell,
-         d_weights_forget,
-         d_weights_store,
-         d_weights_output
-         ) = self.get_gradients(derivative)
+    def learn(self, ratio: float, gradient: List[float]):
+        g_input_state = self.propagate_backward(gradient)
+        self.update_weights(ratio)
 
-        self.weights_cell   += ratio * d_weights_cell
-        self.weights_forget += ratio * d_weights_forget
-        self.weights_store  += ratio * d_weights_store
-        self.weights_output += ratio * d_weights_output
-
-        return d_input_state
+        return g_input_state
 
     def fit(self, X, Y, ratio=0.1, batch=1, max_iterations=0, target_accuracy=1.0, err_der=(lambda Y, P: (Y - P)/2.0)):
         accuracy = numpy.zeros(self.out_dem)
@@ -245,16 +278,12 @@ class LSTMNet(Net):
             else:
                 y_data = Y[iteration * batch:(iteration + 1) * batch]
 
-            d_input_state       = numpy.zeros((self.in_dem))
-            d_weights_forget    = numpy.zeros((self.joint_dem, self.out_dem))
-            d_weights_output    = numpy.zeros((self.joint_dem, self.out_dem))
-            d_weights_store     = numpy.zeros((self.joint_dem, self.out_dem))
-            d_weights_cell      = numpy.zeros((self.joint_dem, self.out_dem))
             accuracy    = 0
             p_accuracy  = 0
             for index in range(batch):
-                self.set_in(x_data[index])
-                prediction = self.get_out()
+                # self.set_in()
+                # prediction = self.get_out()
+                prediction = self.propagate_forward(x_data[index])
                 y_data_temp = numpy.reshape(y_data[index], self.out_dem)
                 keep = y_data_temp != None
                 y_data_temp[y_data_temp == None] = 0
@@ -262,74 +291,15 @@ class LSTMNet(Net):
                                       numpy.reshape(prediction, self.out_dem))
                 accuracy += keep * numpy.abs(y_data_temp -
                                       numpy.round(numpy.reshape(prediction, self.out_dem)))
-                gradient = keep * err_der(y_data_temp,prediction)
+                gradient = keep * err_der(y_data_temp, prediction)
 
-                (d_input_state_temp,
-                 d_weights_cell_temp,
-                 d_weights_forget_temp,
-                 d_weights_store_temp,
-                 d_weights_output_temp
-                 ) = self.get_gradients(gradient)
+                self.propagate_backward(gradient)
 
-                d_input_state       += d_input_state_temp
-                d_weights_forget    += d_weights_forget_temp
-                d_weights_output    += d_weights_output_temp
-                d_weights_store     += d_weights_store_temp
-                d_weights_cell      += d_weights_cell_temp
-
-            self.weights_cell += ratio * d_weights_cell / batch
-            self.weights_forget += ratio * d_weights_forget / batch
-            self.weights_store += ratio * d_weights_store / batch
-            self.weights_output += ratio * d_weights_output / batch
+            self.update_weights(ratio)
 
             accuracy = (1.0 - accuracy / (batch * self.out_dem))
             p_accuracy = (1.0 - p_accuracy / (batch * self.out_dem))
             print("Accuracy: %s\tPredicted Accuracy: %s"%(str(accuracy),str(p_accuracy)))
 
             iteration += 1
-
-    @abstractmethod
-    def save(self) -> str:
-        pass
-
-    @abstractmethod
-    def load(self, save):
-        pass
-
-    @abstractmethod
-    def update(self, screen: pygame.Surface, x: int, y: int, width: int, height: int, scale_dot: int = 5):
-        pass
-
-    @abstractmethod
-    def update_colors(self):
-        pass
-
-    @abstractmethod
-    def draw(self):
-        pass
-
-    def __lt__(self, other):
-        return self.score < other.score
-
-    def __gt__(self, other):
-        return self.score > other.score
-
-    def __ge__(self, other):
-        return self.score >= other.score
-
-    def __le__(self, other):
-        return self.score <= other.score
-
-    def __add__(self, other):
-        if isinstance(other, Net):
-            return self.score + other.score
-        else:
-            return self.score + other
-
-    def __radd__(self, other):
-        if isinstance(other, Net):
-            return self.score + other.score
-        else:
-            return self.score + other
-
 

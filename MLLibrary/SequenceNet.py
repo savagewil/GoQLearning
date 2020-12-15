@@ -1,5 +1,6 @@
 import types
 from abc import ABC
+from typing import List
 
 import numpy
 
@@ -7,18 +8,14 @@ from MLLibrary.Layer import Layer
 from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative, sigmoid_der, color_formula
 
 
-class MatrixNet(Layer):
+class SequenceNet(Layer):
 
-    def __init__(self, in_dem: int, out_dem: int,
-                 activation_function=tanh,
-                 activation_derivative=tanh_derivative):
-        self.in_dem = in_dem
-        self.out_dem = out_dem
-        self.activation_function = activation_function
-        self.activation_derivative = activation_derivative
+    def __init__(self, sequence: List[Layer]):
+        self.in_dem = sequence[0].in_dem
+        self.out_dem = sequence[-1].out_dem
+        self.sequence = sequence
 
-        self.weights = numpy.random.random((self.in_dem, self.out_dem)) * 2.0 - 1.0
-        self.gradients_weights = numpy.zeros((self.in_dem, self.out_dem))
+
         self.inputs = numpy.zeros((1, self.in_dem))
         self.outputs = numpy.zeros((1, self.out_dem))
 
@@ -33,20 +30,27 @@ class MatrixNet(Layer):
 
     def propagate_forward(self, X):
         self.set_in(X)
-        self.outputs = self.activation_function(self.inputs @ self.weights)
+        input_arr = self.inputs
+        output_arr = []
+        for layer in self.sequence:
+            output_arr = layer.propagate_forward(input_arr)
+            input_arr = output_arr
+        self.outputs = output_arr
         return self.outputs
 
     def propagate_backward(self, gradient_Y):
-        gradient = gradient_Y * self.activation_derivative(self.outputs)
-        self.gradients_weights += numpy.transpose(self.inputs) @ gradient
-        return gradient @ numpy.transpose(self.weights)
+        gradient = gradient_Y
+        for layer_index in range(len(self.sequence)-1, -1, -1):
+            layer = self.sequence[layer_index]
+            gradient = layer.propagate_backward(gradient)
+        return gradient
 
     def update_weights(self, learning_rate):
+        for layer in self.sequence:
+            layer.update_weights(learning_rate)
 
-        self.weights += learning_rate * self.gradients_weights
-        self.gradients_weights = numpy.zeros((self.in_dem, self.out_dem))
-
-    def fit(self, X, Y, ratio=0.1, batch=1, max_iterations=0, target_accuracy=1.0, err_der=(lambda Y, P: (Y - P)/2.0)):
+    def fit(self, X, Y, ratio=0.1, batch=1, max_iterations=0, target_accuracy=1.0,
+            err_der=(lambda Y, P: (Y - P) / 2.0)):
         accuracy = numpy.zeros(self.out_dem)
         iteration = 0
         while (iteration < max_iterations or max_iterations <= 0) and any(accuracy < target_accuracy):
@@ -60,8 +64,8 @@ class MatrixNet(Layer):
             else:
                 y_data = Y[iteration * batch:(iteration + 1) * batch]
 
-            accuracy    = 0
-            p_accuracy  = 0
+            accuracy = 0
+            p_accuracy = 0
             for index in range(batch):
                 # self.set_in(x_data[index])
                 # prediction = self.get_out()
@@ -70,9 +74,9 @@ class MatrixNet(Layer):
                 keep = y_data_temp != None
                 y_data_temp[y_data_temp == None] = 0
                 p_accuracy += keep * numpy.abs(y_data_temp -
-                                      numpy.reshape(prediction, self.out_dem))
+                                               numpy.reshape(prediction, self.out_dem))
                 accuracy += keep * numpy.abs(y_data_temp -
-                                      numpy.round(numpy.reshape(prediction, self.out_dem)))
+                                             numpy.round(numpy.reshape(prediction, self.out_dem)))
                 gradient = keep * err_der(y_data_temp, prediction)
 
                 self.propagate_backward(gradient)
@@ -81,6 +85,6 @@ class MatrixNet(Layer):
 
             accuracy = (1.0 - accuracy / (batch * self.out_dem))
             p_accuracy = (1.0 - p_accuracy / (batch * self.out_dem))
-            print("Accuracy: %s\tPredicted Accuracy: %s"%(str(accuracy),str(p_accuracy)))
+            print("Accuracy: %s\tPredicted Accuracy: %s" % (str(accuracy), str(p_accuracy)))
 
             iteration += 1

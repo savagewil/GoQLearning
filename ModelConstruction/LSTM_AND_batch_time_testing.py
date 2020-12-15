@@ -10,7 +10,7 @@ O = 4
 D = 4
 LSTM = LSTMNet(I, O, D)
 MAX_ITER = 1000000
-BATCH = 1000
+BATCH = 100
 LEARNING_RATIO = 3.0
 
 def get_X():
@@ -24,7 +24,7 @@ def get_X():
 def get_Y():
     index = 1
     while True:
-        numpy.random.seed(index-1)
+        numpy.random.seed(index)
         b1 = numpy.random.choice([0.0, 1.0])
         index += 1
         numpy.random.seed(index)
