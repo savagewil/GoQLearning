@@ -9,15 +9,21 @@ from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative,
 
 
 class Layer(Model):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     @abstractmethod
     def propagate_forward(self, X):
         pass
 
     @abstractmethod
-    def propagate_backward(self, gradient_Y):
+    def propagate_backward(self, gradient):
         pass
 
     @abstractmethod
     def update_weights(self, learning_rate):
+        pass
+
+    @abstractmethod
+    def clear(self):
         pass

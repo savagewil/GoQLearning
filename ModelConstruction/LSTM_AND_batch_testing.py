@@ -5,13 +5,18 @@ from random import choice
 import numpy
 import matplotlib.pyplot as plt
 
+from MLLibrary.StatsHandler import StatsHandler
+
 I = 2
 O = 1
 D = 2
-LSTM = LSTMNet(I, O, D)
+
+statsHandler = StatsHandler()
+
+LSTM = LSTMNet(I, O, D, statsHandler=statsHandler)
 MAX_ITER = 1000
-BATCH = 100
-LEARNING_RATIO = 0.1
+BATCH = 10
+LEARNING_RATIO = 0.01
 
 def get_X():
     while True:
@@ -29,7 +34,17 @@ def get_Y():
 X = get_X()
 Y = get_Y()
 
+
 LSTM.fit(X, Y, ratio=LEARNING_RATIO, batch=BATCH, max_iterations=MAX_ITER)
+
+statsHandler.plot_stat("Error", scatter=True)
+plt.show()
+
+statsHandler.plot_stat("accuracy", scatter=True)
+plt.show()
+
+statsHandler.plot_stat("p_accuracy", scatter=True)
+plt.show()
 
 sys.exit()
 
