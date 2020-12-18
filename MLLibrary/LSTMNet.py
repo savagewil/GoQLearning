@@ -330,8 +330,8 @@ class LSTMNet(Layer):
                 p_accuracy += t_p_accuracy
                 accuracy += t_accuracy
                 self.statsHandler.add_to_trial("Error", t_error[0][0])
-                self.statsHandler.add_to_trial("p_accuracy", t_p_accuracy[0])
-                self.statsHandler.add_to_trial("accuracy", t_accuracy[0])
+                self.statsHandler.add_to_trial("p_accuracy", 1.0 - t_p_accuracy[0])
+                self.statsHandler.add_to_trial("accuracy", 1.0 - t_accuracy[0])
                 gradient = keep * err_der(y_data_temp, prediction)
 
                 self.propagate_backward(gradient)

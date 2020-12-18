@@ -36,12 +36,20 @@ class StatsHandler:
         return np.median(stat)
 
     def get_average_trials(self, name):
-        stat = np.array(self.stats[name])
-        return np.average(stat, 1)
+        averages = []
+        for trial in self.stats[name]:
+            if trial:
+                averages.append(np.average(trial))
+        averages = np.array(averages)
+        return averages
 
     def get_median_trials(self, name):
-        stat = np.array(self.stats[name])
-        return np.median(stat, 1)
+        medians = []
+        for trial in self.stats[name]:
+            if trial:
+                medians.append(np.median(trial))
+        medians = np.array(medians)
+        return medians
 
     def get_average(self, name):
         stat = np.array(self.stats[name]).flatten()
