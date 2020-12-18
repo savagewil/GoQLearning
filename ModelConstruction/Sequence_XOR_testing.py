@@ -16,7 +16,7 @@ statsHandler = StatsHandler()
 NET = SequenceNet([MatrixNet(I,
                              I), MatrixNet(I, O)],statsHandler=statsHandler)
 MAX_ITER = 1000000
-BATCH = 1000
+BATCH = 200
 LEARNING_RATIO = 0.1
 
 
