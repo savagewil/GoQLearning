@@ -11,31 +11,29 @@ from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative,
 class SequenceNet(Layer):
 
     def __init__(self, sequence: List[Layer], **kwargs):
-        super().__init__(**kwargs)
-        self.in_dem = sequence[0].in_dem
-        self.out_dem = sequence[-1].out_dem
+        super().__init__(in_size=sequence[0].in_size, 
+                         out_size=sequence[-1].out_size,
+                         **kwargs)
+        self.in_size = sequence[0].in_size
+        self.out_size = sequence[-1].out_size
         self.sequence = sequence
 
-
-        self.inputs = numpy.zeros((1, self.in_dem))
-        self.outputs = numpy.zeros((1, self.out_dem))
+        self.inputs = numpy.zeros((1, self.in_size))
+        self.outputs = numpy.zeros((1, self.out_size))
 
         self.statsHandler.add_stat("Error")
         self.statsHandler.add_stat("p_accuracy")
         self.statsHandler.add_stat("accuracy")
 
     def set_in(self, X):
-        if (1, self.in_dem) == numpy.shape(X):
+        if (1, self.in_size) == numpy.shape(X):
             self.inputs = X
         else:
-            raise ValueError("Array must be (1,%d) it is %s" % (self.in_dem, str(numpy.shape(X))))
+            raise ValueError("Array must be (1,%d) it is %s" % (self.in_size, str(numpy.shape(X))))
 
     def clear(self):
         for layer in self.sequence:
             layer.clear()
-
-    def predict(self, X, **keyword_arguments):
-        return self.propagate_forward(X)
 
     def propagate_forward(self, X):
         self.set_in(X)
@@ -62,7 +60,7 @@ class SequenceNet(Layer):
     #         max_iterations=0, target_accuracy=1.0,
     #         err_der=(lambda Y, P: (Y - P) / 2.0),
     #         err=(lambda Y, P: (Y - P) ** 2.0)):
-    #     accuracy = numpy.zeros(self.out_dem)
+    #     accuracy = numpy.zeros(self.out_size)
     #     iteration = 0
     #     while (iteration < max_iterations or max_iterations <= 0) and any(accuracy < target_accuracy):
     #         if isinstance(X, types.GeneratorType):
@@ -81,13 +79,13 @@ class SequenceNet(Layer):
     #             # self.set_in(x_data[index])
     #             # prediction = self.get_out()
     #             prediction = self.propagate_forward(x_data[index])
-    #             y_data_temp = numpy.reshape(y_data[index], self.out_dem)
+    #             y_data_temp = numpy.reshape(y_data[index], self.out_size)
     #             keep = y_data_temp != None
     #             y_data_temp[y_data_temp == None] = 0
     #
     #             t_error = err(y_data_temp, prediction)
-    #             t_p_accuracy = keep * numpy.abs(y_data_temp - numpy.reshape(prediction, self.out_dem))
-    #             t_accuracy = keep * numpy.abs(y_data_temp - numpy.round(numpy.reshape(prediction, self.out_dem)))
+    #             t_p_accuracy = keep * numpy.abs(y_data_temp - numpy.reshape(prediction, self.out_size))
+    #             t_accuracy = keep * numpy.abs(y_data_temp - numpy.round(numpy.reshape(prediction, self.out_size)))
     #             p_accuracy += t_p_accuracy
     #             accuracy += t_accuracy
     #
@@ -104,8 +102,8 @@ class SequenceNet(Layer):
     #         self.statsHandler.add_trial("p_accuracy")
     #         self.statsHandler.add_trial("accuracy")
     #
-    #         accuracy = (1.0 - accuracy / (batch * self.out_dem))
-    #         p_accuracy = (1.0 - p_accuracy / (batch * self.out_dem))
+    #         accuracy = (1.0 - accuracy / (batch * self.out_size))
+    #         p_accuracy = (1.0 - p_accuracy / (batch * self.out_size))
     #         print("Accuracy: %s\tPredicted Accuracy: %s" % (str(accuracy), str(p_accuracy)))
     #
     #         iteration += 1

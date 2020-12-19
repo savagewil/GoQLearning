@@ -16,7 +16,7 @@ statsHandler = StatsHandler()
 NET = SequenceNet([MatrixNet(I,
                              I), MatrixNet(I, O)],statsHandler=statsHandler)
 MAX_ITER = 1000000
-BATCH = 200
+BATCH = 50
 LEARNING_RATIO = 0.1
 
 
@@ -42,7 +42,10 @@ X = get_X()
 Y = get_Y()
 
 
-NET.fit(X, Y, ratio=LEARNING_RATIO, batch=BATCH, max_iterations=MAX_ITER)
+NET.fit(X, Y, ratio=LEARNING_RATIO,
+        batch=BATCH,
+        max_iterations=MAX_ITER,
+        batches_in_accuracy=5)
 statsHandler.plot_stat("Error", scatter=True)
 plt.show()
 
