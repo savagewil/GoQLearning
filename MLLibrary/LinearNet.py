@@ -9,7 +9,7 @@ from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative,
 
 class LinearNet(Layer):
 
-    def __init__(self, in_size: int, out_size: int, activation_function=tanh, activation_derivative=tanh_derivative,
+    def __init__(self, in_size: int, out_size: int,
                  **kwargs):
         super().__init__(in_size=in_size, out_size=out_size, **kwargs)
         self.in_size = in_size

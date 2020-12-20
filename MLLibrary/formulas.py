@@ -16,23 +16,25 @@ def sigmoid_neat(x: Union[int, float, numpy.array]) -> Union[int, float, numpy.a
     return numpy.divide(1.0, numpy.add(1.0, numpy.exp(numpy.multiply(-4.9, x))))
 
 
-def sigmoid_der(y: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
-    return numpy.multiply(numpy.subtract(1.0, y), y)
+def sigmoid_der(dy: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
+    return numpy.multiply(numpy.subtract(1.0, dy), dy)
 
 
 tanh = numpy.tanh
 
 
-def tanh_derivative(y: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
-    return numpy.subtract(1.0, numpy.square(y))
+def tanh_derivative(dy: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
+    return numpy.subtract(1.0, numpy.square(dy))
 
 
 def relu(x: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
-    return (x > 0) * x
+    y = (x > 0.0) * x
+    return y
 
 
-def relu_derivative(x: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
-    return (x > 0)
+def relu_derivative(dy: Union[int, float, numpy.array]) -> Union[int, float, numpy.array]:
+    dx = (dy > 0.0)
+    return dx
 
 
 def rand(num: Union[int, float]) -> Union[float]:
