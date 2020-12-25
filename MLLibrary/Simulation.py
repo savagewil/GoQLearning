@@ -11,5 +11,5 @@ from MLLibrary.Model import Model
 class Simulation(Data, ABC):
 
     @abstractmethod
-    def run(self, model: Model) -> Tuple[numpy.ndarray, float]:
+    def run(self, model: Model) -> Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, float]:
         pass
