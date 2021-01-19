@@ -1,13 +1,11 @@
 import sys
 
-from MLLibrary.LSTMNet import LSTMNet
-from random import choice
 import numpy
 import matplotlib.pyplot as plt
 
-from MLLibrary.LinearNet import LinearNet
-from MLLibrary.MatrixNet import MatrixNet
-from MLLibrary.SequenceNet import SequenceNet
+from MLLibrary.Models.LinearNet import LinearNet
+from MLLibrary.Models.MatrixNet import MatrixNet
+from MLLibrary.Models.SequenceNet import SequenceNet
 from MLLibrary.StatsHandler import StatsHandler
 from MLLibrary.formulas import relu, relu_derivative
 

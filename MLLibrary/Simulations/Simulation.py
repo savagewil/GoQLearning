@@ -5,7 +5,7 @@ import numpy
 from MLLibrary.Data import Data
 from abc import ABC, abstractmethod
 
-from MLLibrary.Model import Model
+from MLLibrary.Models.Model import Model
 
 
 class Simulation(Data, ABC):

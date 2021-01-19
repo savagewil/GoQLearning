@@ -1,7 +1,7 @@
 import numpy
 
-from MLLibrary.Model import Model
-from MLLibrary.Simulation import Simulation
+from MLLibrary.Models.Model import Model
+from MLLibrary.Simulations.Simulation import Simulation
 
 
 class QLearningModel(Model):

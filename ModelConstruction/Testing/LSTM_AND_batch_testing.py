@@ -1,8 +1,6 @@
 import sys
 
-from MLLibrary.LSTMNet import LSTMNet
-from random import choice
-import numpy
+from MLLibrary.Models.LSTMNet import LSTMNet
 import matplotlib.pyplot as plt
 
 from MLLibrary.StatsHandler import StatsHandler

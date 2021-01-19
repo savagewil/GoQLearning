@@ -1,12 +1,9 @@
-import types
-from abc import abstractmethod
-from typing import Tuple, List, Callable, Type
+from typing import List
 
-import numpy, random, math, pygame
+import numpy
 
-from MLLibrary.Layer import Layer
-from MLLibrary.StatsHandler import StatsHandler
-from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative, sigmoid_der, color_formula
+from MLLibrary.Models.Layer import Layer
+from MLLibrary.formulas import sigmoid, tanh, tanh_derivative, sigmoid_der
 
 
 class LSTMNet(Layer):

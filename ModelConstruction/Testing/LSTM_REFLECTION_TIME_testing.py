@@ -1,4 +1,4 @@
-from MLLibrary.LSTMNet import LSTMNet
+from MLLibrary.Models.LSTMNet import LSTMNet
 from random import choice
 import numpy
 import matplotlib.pyplot as plt

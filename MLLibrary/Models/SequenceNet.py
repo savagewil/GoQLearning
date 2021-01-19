@@ -1,11 +1,8 @@
-import types
-from abc import ABC
 from typing import List
 
 import numpy
 
-from MLLibrary.Layer import Layer
-from MLLibrary.formulas import distance_formula, sigmoid, tanh, tanh_derivative, sigmoid_der, color_formula
+from MLLibrary.Models.Layer import Layer
 
 
 class SequenceNet(Layer):

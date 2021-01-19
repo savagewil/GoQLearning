@@ -1,9 +1,6 @@
 import sys
 
-from MLLibrary.LSTMNet import LSTMNet
-from random import choice
-import numpy
-import matplotlib.pyplot as plt
+from MLLibrary.Models.LSTMNet import LSTMNet
 
 I = 1
 O = 1

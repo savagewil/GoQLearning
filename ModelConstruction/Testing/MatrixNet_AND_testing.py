@@ -1,11 +1,9 @@
 import sys
 
-from MLLibrary.LSTMNet import LSTMNet
-from random import choice
 import numpy
 import matplotlib.pyplot as plt
 
-from MLLibrary.MatrixNet import MatrixNet
+from MLLibrary.Models.MatrixNet import MatrixNet
 from MLLibrary.StatsHandler import StatsHandler
 
 I = 2
