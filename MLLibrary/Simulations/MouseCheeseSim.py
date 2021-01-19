@@ -20,7 +20,6 @@ class MouseCheeseSim(Simulation):
 
     def handle(self, in_array:numpy.ndarray):
         self.player_pos = numpy.mod(self.player_pos + numpy.round(in_array), self.size)
-        print(self.player_pos)
 
     def left(self):
         self.handle(numpy.array([0, -1]))
@@ -47,7 +46,6 @@ class MouseCheeseSim(Simulation):
             self.field[row, col] = 1
         self.display_field = numpy.tile(self.field,(3,3))
 
-
     def display(self):
         self.update()
         row = self.size + self.player_pos[0]
@@ -56,7 +54,6 @@ class MouseCheeseSim(Simulation):
         row_max = int(row_min + self.size)
         col_min = int(numpy.ceil(self.size/2) + self.player_pos[1])
         col_max = int(col_min + self.size)
-        print(row_min, row_max, col_min, col_max)
         self.display_field[row, y] = 2
         rotated_field = self.display_field[row_min:row_max, col_min:col_max]
         text = numpy.unicode(
